@@ -178,6 +178,76 @@ def parse_class_name(class_name: str) -> dict:
         'is_healthy': is_healthy
     }
 
+# List of plant species supported by the trained model
+SUPPORTED_PLANTS = [
+    'Apple', 'Blueberry', 'Cherry', 'Corn (maize)', 'Grape', 'Orange',
+    'Peach', 'Pepper (bell)', 'Potato', 'Raspberry', 'Soybean',
+    'Squash', 'Strawberry', 'Tomato'
+]
+
+MIN_CONFIDENCE_THRESHOLD = 55.0
+
+
+def is_prediction_reliable(predictions: list) -> dict:
+    """
+    Evaluate whether the top prediction is reliable and whether the uploaded
+    plant is likely supported by the model.
+
+    Returns:
+        dict: {
+            'reliable': bool,
+            'reason': str or None,
+            'warning_type': 'unsupported_plant' | 'low_confidence' | 'ambiguous' | None
+        }
+    """
+    if not predictions:
+        return {
+            'reliable': False,
+            'reason': 'No prediction could be made for this image.',
+            'warning_type': 'no_prediction'
+        }
+
+    top = predictions[0]
+    top_conf = top['confidence']
+
+    # Severe low confidence (< 50%): almost certainly an unsupported plant (like Paddy/Rice, Wheat, Mango, etc.) or non-leaf
+    if top_conf < 50.0:
+        return {
+            'reliable': False,
+            'warning_type': 'unsupported_plant',
+            'reason': (
+                f"⚠️ Inconclusive Diagnosis ({top_conf:.1f}% confidence): The uploaded image does not strongly match any supported crop in the database. "
+                "If this is a Paddy/Rice, Wheat, or other unlisted plant, please note that this system currently supports: "
+                f"{', '.join(SUPPORTED_PLANTS)}. Please ensure you upload a clear close-up leaf photo of a supported crop."
+            )
+        }
+
+    # Moderate confidence (< 65%) with close runner-up (gap < 10%): ambiguous
+    if len(predictions) > 1:
+        gap = top_conf - predictions[1]['confidence']
+        if top_conf < 65.0 and gap < 10.0:
+            return {
+                'reliable': False,
+                'warning_type': 'ambiguous',
+                'reason': (
+                    f"⚠️ Uncertain Diagnosis ({top_conf:.1f}% vs {predictions[1]['confidence']:.1f}%): The AI is torn between '{top['plant_name']} - {top['disease_name']}' "
+                    f"and '{predictions[1]['plant_name']} - {predictions[1]['disease_name']}'. This often happens when the leaf belongs to an unsupported plant type (e.g. Paddy/Rice) "
+                    "or the photo is taken from too far away."
+                )
+            }
+
+    # Moderate confidence warning
+    if top_conf < 70.0:
+        return {
+            'reliable': True,
+            'warning_type': 'moderate_confidence',
+            'reason': (
+                f"ℹ️ Moderate confidence ({top_conf:.1f}%). For highest accuracy, capture a well-lit, sharp photo focused on an individual leaf."
+            )
+        }
+
+    return {'reliable': True, 'reason': None, 'warning_type': None}
+
 
 def predict(model, image_array: np.ndarray, class_names: list, top_k: int = 3) -> list:
     """
@@ -474,6 +544,125 @@ DISEASE_INFO = {
             'Ensure good air circulation between plants.',
             'Avoid excessive nitrogen fertilization.',
             'Water at the base of plants, not on foliage.'
+        ]
+    },
+
+    'Blueberry___healthy': {
+        'description': 'The blueberry foliage appears vigorous and healthy with uniform deep green coloration and no fungal leaf spots or rust.',
+        'prevention': [
+            'Maintain acidic soil conditions (pH 4.5 - 5.2) for optimal micronutrient uptake.',
+            'Apply pine bark or peat mulch around root zones to retain soil moisture.',
+            'Ensure adequate drip irrigation, avoiding wetting leaves.',
+            'Prune mature woody canes periodically to encourage vigorous new shoot growth.'
+        ]
+    },
+    'Cherry_(including_sour)___Powdery_mildew': {
+        'description': 'Powdery mildew on cherries is caused by Podosphaera clandestina. It produces distinctive white powdery fungal growth on leaves and shoot tips, causing distortion and curled foliage.',
+        'prevention': [
+            'Prune inner branches during dormancy to improve sunlight penetration and air circulation.',
+            'Apply preventative sulfur or horticultural oil sprays during early shoot development.',
+            'Avoid excessive nitrogen fertilizers that stimulate rapid susceptible tender growth.',
+            'Remove and destroy heavily infested shoot tips.'
+        ]
+    },
+    'Cherry_(including_sour)___healthy': {
+        'description': 'The cherry tree foliage displays healthy leaf structure with vibrant green coloration and no visible mildew, leaf spot, or pest defoliation.',
+        'prevention': [
+            'Maintain regular orchard sanitation by removing fallen leaves and mummified fruits.',
+            'Ensure balanced fertilization and proper seasonal irrigation.',
+            'Monitor regularly for early leaf-chewing insects and fungal leaf spot.'
+        ]
+    },
+    'Orange___Haunglongbing_(Citrus_greening)': {
+        'description': 'Huanglongbing (HLB / Citrus Greening) is a severe bacterial disease spread by Asian citrus psyllids. It causes asymmetrical yellow mottling on leaves, stunted shoots, and lopsided bitter fruit.',
+        'prevention': [
+            'Inspect regularly for Asian citrus psyllid vectors and apply recommended control treatments.',
+            'Only plant certified disease-free nursery stock from certified greenhouses.',
+            'Immediately remove and destroy confirmed infected trees to prevent grove-wide spread.',
+            'Provide foliar micronutrient applications to maintain tree vigor.'
+        ]
+    },
+    'Peach___healthy': {
+        'description': 'The peach foliage shows healthy elongated leaves with smooth margins and normal green pigmentation, free of bacterial spots or leaf curl deformities.',
+        'prevention': [
+            'Apply dormant copper sprays in late winter to prevent peach leaf curl.',
+            'Prune tree canopy in an open vase shape to maximize ventilation and rapid drying.',
+            'Maintain weed-free tree basins and consistent irrigation during fruit sizing.'
+        ]
+    },
+    'Pepper,_bell___healthy': {
+        'description': 'The bell pepper foliage shows healthy green leaves without bacterial lesions, mosaic virus mottling, or fungal spots.',
+        'prevention': [
+            'Water at the base using drip irrigation; keep leaves dry.',
+            'Use organic mulch around plant bases to prevent soil splashing onto lower leaves.',
+            'Rotate pepper and solanaceous crops on a 3-year cycle.',
+            'Maintain balanced calcium and magnesium levels in soil.'
+        ]
+    },
+    'Potato___healthy': {
+        'description': 'The potato foliage exhibits healthy, lush dark green compound leaves without necrotic target spots or blight lesions.',
+        'prevention': [
+            'Hill soil properly around developing tubers and stems.',
+            'Inspect foliage weekly for early signs of Colorado potato beetle or blight.',
+            'Ensure proper plant spacing for canopy air flow.',
+            'Rotate fields with legumes, brassicas, or grasses.'
+        ]
+    },
+    'Raspberry___healthy': {
+        'description': 'The raspberry plant displays vibrant green serrated leaves with strong canes and no signs of cane blight, rust, or spider mite webbing.',
+        'prevention': [
+            'Prune out spent floricanes right after fruiting to promote primocane growth and ventilation.',
+            'Trellis canes to keep foliage off the ground and improve air flow.',
+            'Apply drip irrigation and maintain organic mulch.'
+        ]
+    },
+    'Soybean___healthy': {
+        'description': 'The soybean plant exhibits healthy trifoliate leaves with vibrant green coloration and no signs of soybean rust, bacterial blight, or frogeye leaf spot.',
+        'prevention': [
+            'Rotate soybean with corn or small grains to break pest and disease cycles.',
+            'Select certified disease-resistant high-yielding varieties.',
+            'Scout fields systematically during flowering and pod development stages.'
+        ]
+    },
+    'Strawberry___healthy': {
+        'description': 'The strawberry plant exhibits healthy trifoliate leaves with bright green luster and no signs of leaf scorch, angular leaf spot, or powdery mildew.',
+        'prevention': [
+            'Plant in raised beds with clean straw mulch to keep leaves and fruits off soil.',
+            'Drip irrigate early in the day to minimize leaf wetness duration.',
+            'Renovate strawberry beds after harvest and remove old diseased foliage.'
+        ]
+    },
+    'Apple___healthy': {
+        'description': 'The apple leaves appear completely healthy with uniform green color, smooth margins, and no signs of scab lesions, rust spots, or powdery mildew.',
+        'prevention': [
+            'Maintain an open canopy with annual dormant pruning.',
+            'Rake and compost or destroy fallen leaves in autumn to eliminate overwintering fungal spores.',
+            'Apply dormant horticultural oils to suppress overwintering mites and scale insects.'
+        ]
+    },
+    'Corn_(maize)___healthy': {
+        'description': 'The maize/corn leaf shows healthy parallel venation with rich green color and no rust pustules, northern leaf blight lesions, or gray leaf spots.',
+        'prevention': [
+            'Plant high-performing disease-resistant hybrid seed.',
+            'Practice continuous crop rotation with non-host crops like legumes.',
+            'Ensure balanced nitrogen, phosphorus, and potassium soil fertility.'
+        ]
+    },
+    'Grape___healthy': {
+        'description': 'The grapevine foliage displays healthy lobed green leaves without black rot lesions, downy mildew patches, or leafhopper damage.',
+        'prevention': [
+            'Perform canopy management (shoot positioning and leaf pulling) around grape clusters.',
+            'Apply preventative fungicide sprays according to regional spray schedules.',
+            'Disinfect pruning shears regularly when pruning dormant vines.'
+        ]
+    },
+    'Tomato___healthy': {
+        'description': 'The tomato foliage displays vibrant, healthy compound leaves with no signs of early blight target spots, bacterial spots, or viral curling.',
+        'prevention': [
+            'Stake or cage plants to maintain upright growth and prevent soil contact.',
+            'Prune lower sucker leaves up to 12 inches from ground level to prevent soil splash infection.',
+            'Always water at the base of the plant using drip or soaker hoses.',
+            'Apply organic straw or woodchip mulch around root zones.'
         ]
     },
 }

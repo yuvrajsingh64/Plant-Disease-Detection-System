@@ -53,9 +53,9 @@ CONFUSION_MATRIX_PATH = os.path.join('models', 'confusion_matrix.png')
 TRAINING_HISTORY_PATH = os.path.join('models', 'training_history.png')
 
 IMG_SIZE = (224, 224)
-BATCH_SIZE = 16
-EPOCHS_PHASE1 = 10          # Transfer learning (frozen base)
-EPOCHS_PHASE2 = 5           # Fine-tuning (top layers unfrozen)
+BATCH_SIZE = 32
+EPOCHS_PHASE1 = 15          # Transfer learning (frozen base)
+EPOCHS_PHASE2 = 10          # Fine-tuning (top layers unfrozen)
 LEARNING_RATE_PHASE1 = 1e-3
 LEARNING_RATE_PHASE2 = 1e-5
 VALIDATION_SPLIT = 0.10

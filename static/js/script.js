@@ -268,15 +268,43 @@ document.addEventListener('DOMContentLoaded', () => {
     resultImage.src = image_url;
     resultImage.alt = `Analyzed leaf: ${top.disease_name}`;
 
-    // Plant name
-    resultPlantName.textContent = `Plant: ${top.plant_name}`;
+    const unsupportedAlert = document.getElementById('unsupported-alert');
+    const unsupportedAlertTitle = document.getElementById('unsupported-alert-title');
+    const unsupportedAlertDesc = document.getElementById('unsupported-alert-desc');
+    const isReliable = (data.is_reliable !== false) && (top.confidence >= 50.0);
 
-    // Status badge
-    resultStatusBadge.textContent = top.is_healthy ? 'Healthy' : 'Diseased';
-    resultStatusBadge.className = `status-badge ${top.is_healthy ? 'healthy' : 'diseased'}`;
+    if (!isReliable) {
+      // Image is an unsupported plant (like Paddy) or confidence is too low
+      if (unsupportedAlert) {
+        unsupportedAlert.classList.remove('hidden');
+        if (data.warning_type === 'unsupported_plant' || top.confidence < 50.0) {
+          unsupportedAlertTitle.textContent = '⚠️ Inconclusive Diagnosis — Unsupported Crop Detected';
+          unsupportedAlertDesc.innerHTML = data.warning || 
+            `The AI confidence is low (<strong>${top.confidence.toFixed(1)}%</strong>). This image does not reliably match our 14 supported crops. If this is <strong>Paddy/Rice</strong>, Wheat, or another unlisted plant, please note that diagnoses for unsupported crops cannot be guaranteed.`;
+        } else {
+          unsupportedAlertTitle.textContent = '⚠️ Ambiguous / Low Confidence Diagnosis';
+          unsupportedAlertDesc.textContent = data.warning || 'The AI is uncertain about this prediction. Please try a clearer, closer leaf photo.';
+        }
+      }
 
-    // Disease name
-    resultDiseaseName.textContent = top.disease_name;
+      // Update badge to reflect uncertainty
+      resultStatusBadge.textContent = 'Inconclusive';
+      resultStatusBadge.className = 'status-badge unsupported';
+
+      // Update plant & disease display with disclaimer
+      resultPlantName.textContent = `Plant: Unknown / Unsupported (Best match: ${top.plant_name})`;
+      resultDiseaseName.textContent = `${top.disease_name} (Uncertain)`;
+    } else {
+      // Diagnosis is reliable
+      if (unsupportedAlert) {
+        unsupportedAlert.classList.add('hidden');
+      }
+
+      resultPlantName.textContent = `Plant: ${top.plant_name}`;
+      resultStatusBadge.textContent = top.is_healthy ? 'Healthy' : 'Diseased';
+      resultStatusBadge.className = `status-badge ${top.is_healthy ? 'healthy' : 'diseased'}`;
+      resultDiseaseName.textContent = top.disease_name;
+    }
 
     // Confidence bar (animate)
     const conf = top.confidence;

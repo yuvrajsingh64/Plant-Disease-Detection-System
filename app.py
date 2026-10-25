@@ -14,7 +14,8 @@ import uuid
 import base64
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-from predict import load_model, load_class_names, preprocess_image, predict, get_disease_info
+from predict import (load_model, load_class_names, preprocess_image, predict,
+                      get_disease_info, is_prediction_reliable)
 
 # =============================================================================
 # App Configuration
@@ -177,19 +178,12 @@ def predict_disease():
                 'error': 'Prediction failed. The model could not classify this image.'
             }), 500
 
+        # Evaluate prediction reliability and unsupported plant detection
+        reliability = is_prediction_reliable(predictions)
+
         # Get disease information for the top prediction
         top_class = predictions[0]['class_name']
         disease_info = get_disease_info(top_class)
-
-        # Check confidence — warn if too low
-        top_confidence = predictions[0]['confidence']
-        low_confidence_warning = None
-        if top_confidence < 40:
-            low_confidence_warning = (
-                'The model has low confidence in this prediction. '
-                'The image may not be a recognizable plant leaf, or the disease '
-                'may not be in the training dataset. Please try a clearer image.'
-            )
 
         # Build response
         response = {
@@ -197,10 +191,12 @@ def predict_disease():
             'predictions': predictions,
             'disease_info': disease_info,
             'image_url': image_url,
+            'is_reliable': reliability['reliable'],
+            'warning_type': reliability.get('warning_type'),
         }
 
-        if low_confidence_warning:
-            response['warning'] = low_confidence_warning
+        if reliability.get('reason'):
+            response['warning'] = reliability['reason']
 
         return jsonify(response), 200
 

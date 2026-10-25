@@ -782,6 +782,86 @@ img {
   color: #155724;
 }
 
+
+.status-badge.unsupported {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.unsupported-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: #fff8e1;
+  border: 1.5px solid #ffe082;
+  border-radius: var(--radius-sm);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.unsupported-alert .alert-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.unsupported-alert .alert-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #b78103;
+  margin-bottom: 0.35rem;
+}
+
+.unsupported-alert .alert-desc {
+  font-size: 0.88rem;
+  color: #5d4037;
+  line-height: 1.6;
+}
+
+.supported-crops-box {
+  background: #f0faf4;
+  border: 1px solid var(--primary-lighter);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.supported-crops-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.crops-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.crop-tag {
+  background: var(--white);
+  border: 1px solid var(--primary-lighter);
+  color: var(--text-dark);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.crop-notice {
+  font-size: 0.78rem;
+  color: #777;
+  line-height: 1.45;
+}
+
 .status-badge.diseased {
   background: #f8d7da;
   color: #721c24;
@@ -1380,7 +1460,7 @@ img {
       <div class="hero-visual" aria-hidden="true">
         <div class="hero-blob">
           <span class="hero-leaf-emoji">🌿</span>
-          <span class="hero-badge-tag tag-1">🔍 98%+ Accuracy</span>
+          <span class="hero-badge-tag tag-1">🔬 Deep Learning Vision AI</span>
           <span class="hero-badge-tag tag-2">⚡ Instant Results</span>
         </div>
       </div>
@@ -1446,7 +1526,35 @@ img {
           <p class="section-subtitle">Select or drop a high-resolution image of the plant leaf you want to analyze</p>
         </div>
 
+        
         <div class="upload-wrapper">
+          <!-- Supported Crops Information -->
+          <div class="supported-crops-box">
+            <div class="supported-crops-header">
+              <span>🌾</span>
+              <span>Supported Crops in this System:</span>
+            </div>
+            <div class="crops-tag-list">
+              <span class="crop-tag">🍎 Apple</span>
+              <span class="crop-tag">🫐 Blueberry</span>
+              <span class="crop-tag">🍒 Cherry</span>
+              <span class="crop-tag">🌽 Corn (Maize)</span>
+              <span class="crop-tag">🍇 Grape</span>
+              <span class="crop-tag">🍊 Orange</span>
+              <span class="crop-tag">🍑 Peach</span>
+              <span class="crop-tag">🫑 Pepper</span>
+              <span class="crop-tag">🥔 Potato</span>
+              <span class="crop-tag">🍇 Raspberry</span>
+              <span class="crop-tag">🌱 Soybean</span>
+              <span class="crop-tag">🎃 Squash</span>
+              <span class="crop-tag">🍓 Strawberry</span>
+              <span class="crop-tag">🍅 Tomato</span>
+            </div>
+            <p class="crop-notice">
+              <strong>Notice on Paddy / Rice &amp; other crops:</strong> The AI model has been trained on PlantVillage crops. If an unlisted crop (such as Paddy/Rice or Wheat) is uploaded, the diagnosis will be flagged as <em>Inconclusive / Unsupported</em> to prevent misleading recommendations.
+            </p>
+          </div>
+
           <!-- Drag-and-drop zone -->
           <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Upload leaf image drag and drop area">
             <input type="file" id="file-input" class="file-input" accept=".jpg,.jpeg,.png" aria-label="Choose image file">
@@ -1515,8 +1623,21 @@ img {
           <p class="section-subtitle">Detailed breakdown of the identified condition and recommended treatment</p>
         </div>
 
+        
         <div class="results-grid">
+          <!-- Unsupported Plant / Inconclusive Alert Banner -->
+          <div id="unsupported-alert" class="unsupported-alert hidden" role="alert">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-content">
+              <h4 class="alert-title" id="unsupported-alert-title">Inconclusive Diagnosis / Unsupported Crop</h4>
+              <p class="alert-desc" id="unsupported-alert-desc">
+                The AI model has low confidence in this diagnosis. The uploaded photo may be an unlisted crop (such as Paddy / Rice) or the leaf photo lacks clear symptomatic features.
+              </p>
+            </div>
+          </div>
+
           <!-- Primary Result Card -->
+
           <div class="result-card main-result-card">
             <div class="result-image-box">
               <img id="result-image" src="" alt="Analyzed Leaf" class="result-image">
@@ -1918,15 +2039,43 @@ document.addEventListener('DOMContentLoaded', () => {
     resultImage.src = image_url;
     resultImage.alt = `Analyzed leaf: ${top.disease_name}`;
 
-    // Plant name
-    resultPlantName.textContent = `Plant: ${top.plant_name}`;
+    const unsupportedAlert = document.getElementById('unsupported-alert');
+    const unsupportedAlertTitle = document.getElementById('unsupported-alert-title');
+    const unsupportedAlertDesc = document.getElementById('unsupported-alert-desc');
+    const isReliable = (data.is_reliable !== false) && (top.confidence >= 50.0);
 
-    // Status badge
-    resultStatusBadge.textContent = top.is_healthy ? 'Healthy' : 'Diseased';
-    resultStatusBadge.className = `status-badge ${top.is_healthy ? 'healthy' : 'diseased'}`;
+    if (!isReliable) {
+      // Image is an unsupported plant (like Paddy) or confidence is too low
+      if (unsupportedAlert) {
+        unsupportedAlert.classList.remove('hidden');
+        if (data.warning_type === 'unsupported_plant' || top.confidence < 50.0) {
+          unsupportedAlertTitle.textContent = '⚠️ Inconclusive Diagnosis — Unsupported Crop Detected';
+          unsupportedAlertDesc.innerHTML = data.warning || 
+            `The AI confidence is low (<strong>${top.confidence.toFixed(1)}%</strong>). This image does not reliably match our 14 supported crops. If this is <strong>Paddy/Rice</strong>, Wheat, or another unlisted plant, please note that diagnoses for unsupported crops cannot be guaranteed.`;
+        } else {
+          unsupportedAlertTitle.textContent = '⚠️ Ambiguous / Low Confidence Diagnosis';
+          unsupportedAlertDesc.textContent = data.warning || 'The AI is uncertain about this prediction. Please try a clearer, closer leaf photo.';
+        }
+      }
 
-    // Disease name
-    resultDiseaseName.textContent = top.disease_name;
+      // Update badge to reflect uncertainty
+      resultStatusBadge.textContent = 'Inconclusive';
+      resultStatusBadge.className = 'status-badge unsupported';
+
+      // Update plant & disease display with disclaimer
+      resultPlantName.textContent = `Plant: Unknown / Unsupported (Best match: ${top.plant_name})`;
+      resultDiseaseName.textContent = `${top.disease_name} (Uncertain)`;
+    } else {
+      // Diagnosis is reliable
+      if (unsupportedAlert) {
+        unsupportedAlert.classList.add('hidden');
+      }
+
+      resultPlantName.textContent = `Plant: ${top.plant_name}`;
+      resultStatusBadge.textContent = top.is_healthy ? 'Healthy' : 'Diseased';
+      resultStatusBadge.className = `status-badge ${top.is_healthy ? 'healthy' : 'diseased'}`;
+      resultDiseaseName.textContent = top.disease_name;
+    }
 
     // Confidence bar (animate)
     const conf = top.confidence;
