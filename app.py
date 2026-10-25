@@ -15,7 +15,7 @@ import base64
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from predict import (load_model, load_class_names, preprocess_image, predict,
-                      get_disease_info, is_prediction_reliable)
+                      get_disease_info, is_prediction_reliable, predict_with_gemini)
 
 # =============================================================================
 # App Configuration
@@ -169,34 +169,48 @@ def predict_disease():
                 'error': 'Invalid or corrupted image. Please upload a valid leaf photo.'
             }), 400
 
-        # Run prediction
-        predictions = predict(model, image_array, class_names, top_k=3)
+        # Check for Gemini Vision API key (via custom header or server env)
+        gemini_key = request.headers.get('X-Gemini-Key') or os.environ.get('GEMINI_API_KEY')
+        gemini_result = None
 
-        if not predictions:
-            return jsonify({
-                'success': False,
-                'error': 'Prediction failed. The model could not classify this image.'
-            }), 500
+        if gemini_key:
+            gemini_result = predict_with_gemini(img_bytes, gemini_key.strip())
 
-        # Evaluate prediction reliability and unsupported plant detection
-        reliability = is_prediction_reliable(predictions)
+        if gemini_result and gemini_result.get('predictions'):
+            predictions = gemini_result['predictions']
+            disease_info = gemini_result.get('disease_info') or get_disease_info(predictions[0].get('class_name', ''))
+            engine_name = gemini_result.get('engine', 'Google Gemini Vision AI')
+            is_reliable = True
+            warning = None
+        else:
+            # Run local neural & agronomic multi-crop prediction
+            predictions = predict(model, image_array, class_names, top_k=3, raw_bytes=img_bytes)
 
-        # Get disease information for the top prediction
-        top_class = predictions[0]['class_name']
-        disease_info = get_disease_info(top_class)
+            if not predictions:
+                return jsonify({
+                    'success': False,
+                    'error': 'Prediction failed. The model could not classify this image.'
+                }), 500
 
-        # Build response
+            reliability = is_prediction_reliable(predictions)
+            top_class = predictions[0].get('class_name', '')
+            disease_info = get_disease_info(top_class)
+            engine_name = "Agronomic Vision AI (Rice Engine)" if "Rice" in top_class else "MobileNetV2 Vision AI"
+            is_reliable = reliability['reliable']
+            warning = reliability.get('reason')
+
+        # Build final response
         response = {
             'success': True,
             'predictions': predictions,
             'disease_info': disease_info,
             'image_url': image_url,
-            'is_reliable': reliability['reliable'],
-            'warning_type': reliability.get('warning_type'),
+            'is_reliable': is_reliable,
+            'engine': engine_name,
         }
 
-        if reliability.get('reason'):
-            response['warning'] = reliability['reason']
+        if warning:
+            response['warning'] = warning
 
         return jsonify(response), 200
 

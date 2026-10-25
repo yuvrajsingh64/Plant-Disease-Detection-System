@@ -234,9 +234,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
+      const savedKey = localStorage.getItem('plant_ai_gemini_key') || '';
+      const headers = {};
+      if (savedKey) {
+        headers['X-Gemini-Key'] = savedKey;
+      }
+
       const response = await fetch('/predict', {
         method: 'POST',
         body: formData,
+        headers: headers,
       });
 
       const data = await response.json();
@@ -422,5 +429,48 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.remove();
       }
     }, 4000);
+  }
+
+  // Modal handlers
+  const apiKeyModal = document.getElementById('api-key-modal');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const saveKeyBtn = document.getElementById('save-key-btn');
+  const clearKeyBtn = document.getElementById('clear-key-btn');
+  const geminiKeyInput = document.getElementById('gemini-key-input');
+
+  if (geminiKeyInput) {
+    geminiKeyInput.value = localStorage.getItem('plant_ai_gemini_key') || '';
+  }
+
+  const openModalBtn = document.getElementById('open-api-modal-btn');
+  if (openModalBtn && apiKeyModal) {
+    openModalBtn.addEventListener('click', () => apiKeyModal.classList.remove('hidden'));
+  }
+
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => apiKeyModal.classList.add('hidden'));
+  }
+
+  if (saveKeyBtn) {
+    saveKeyBtn.addEventListener('click', () => {
+      const key = geminiKeyInput.value.trim();
+      if (key) {
+        localStorage.setItem('plant_ai_gemini_key', key);
+        showToast('Gemini Vision AI enabled successfully!', 'success');
+      } else {
+        localStorage.removeItem('plant_ai_gemini_key');
+        showToast('Using high-speed built-in AI engine.', 'success');
+      }
+      apiKeyModal.classList.add('hidden');
+    });
+  }
+
+  if (clearKeyBtn) {
+    clearKeyBtn.addEventListener('click', () => {
+      geminiKeyInput.value = '';
+      localStorage.removeItem('plant_ai_gemini_key');
+      showToast('Key cleared. Using built-in AI.', 'success');
+      apiKeyModal.classList.add('hidden');
+    });
   }
 });

@@ -789,6 +789,188 @@ img {
   border: 1px solid #ffeeba;
 }
 
+
+/* Engine Badge */
+.engine-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #e8f5e9 0%, #d8f3dc 100%);
+  color: var(--primary);
+  border: 1px solid var(--primary-light);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Remedies Section */
+.remedies-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .remedies-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.remedy-card {
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.chemical-remedy {
+  background: #fdf2f2;
+  border-color: #fecaca;
+}
+
+.organic-remedy {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.remedy-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.chemical-remedy .remedy-header {
+  color: #991b1b;
+}
+
+.organic-remedy .remedy-header {
+  color: #166534;
+}
+
+.remedy-list {
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.remedy-list li {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #374151;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.chemical-remedy .remedy-list li::before {
+  content: '🧪';
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.organic-remedy .remedy-list li::before {
+  content: '🌿';
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* API Key Modal & Settings Pill */
+.api-key-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(45, 106, 79, 0.1);
+  border: 1px solid rgba(45, 106, 79, 0.25);
+  color: var(--primary);
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.api-key-pill:hover {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  max-width: 520px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+}
+
+.modal-desc {
+  font-size: 0.9rem;
+  color: var(--text-medium);
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+
+.key-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.key-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
+}
+
 .unsupported-alert {
   display: flex;
   align-items: flex-start;
@@ -1433,6 +1615,7 @@ img {
         <li class="nav-item"><a href="#how-it-works" class="nav-link">How It Works</a></li>
         <li class="nav-item"><a href="#upload-section" class="nav-link">Detect</a></li>
         <li class="nav-item"><a href="#about" class="nav-link">About</a></li>
+        <li class="nav-item"><button type="button" class="api-key-pill" id="open-api-modal-btn">⚙️ AI Engine</button></li>
       </ul>
     </div>
   </nav>
@@ -1535,6 +1718,7 @@ img {
               <span>Supported Crops in this System:</span>
             </div>
             <div class="crops-tag-list">
+              <span class="crop-tag" style="background:#d8f3dc;font-weight:700;border-color:#52b788;">🌾 Rice (Paddy)</span>
               <span class="crop-tag">🍎 Apple</span>
               <span class="crop-tag">🫐 Blueberry</span>
               <span class="crop-tag">🍒 Cherry</span>
@@ -1593,6 +1777,9 @@ img {
           <div class="sample-leaves-container">
             <p class="sample-leaves-title">🌿 Don't have a leaf photo? Click a sample to test instantly:</p>
             <div class="sample-chips">
+              <button type="button" class="sample-chip" data-sample="Rice___healthy_test.jpg" title="Lush green Rice / Paddy crop with panicles" style="border-color:#40916c;background:#f0faf4;font-weight:600;">
+                🌾 Paddy (Rice)
+              </button>
               <button type="button" class="sample-chip" data-sample="Tomato___Early_blight_test.jpg" title="Tomato with Early Blight fungal spots">
                 🍅 Tomato Blight
               </button>
@@ -1647,6 +1834,7 @@ img {
               <div class="result-header">
                 <span class="plant-label" id="result-plant-name">Plant: Tomato</span>
                 <span class="status-badge diseased" id="result-status-badge">Diseased</span>
+                <span class="engine-badge" id="result-engine-badge">⚡ Vision AI</span>
               </div>
 
               <h3 class="disease-name" id="result-disease-name">Early Blight</h3>
@@ -2005,9 +2193,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
+      const savedKey = localStorage.getItem('plant_ai_gemini_key') || '';
+      const headers = {};
+      if (savedKey) {
+        headers['X-Gemini-Key'] = savedKey;
+      }
+
       const response = await fetch('/predict', {
         method: 'POST',
         body: formData,
+        headers: headers,
       });
 
       const data = await response.json();
@@ -2194,8 +2389,71 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 4000);
   }
+
+  // Modal handlers
+  const apiKeyModal = document.getElementById('api-key-modal');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const saveKeyBtn = document.getElementById('save-key-btn');
+  const clearKeyBtn = document.getElementById('clear-key-btn');
+  const geminiKeyInput = document.getElementById('gemini-key-input');
+
+  if (geminiKeyInput) {
+    geminiKeyInput.value = localStorage.getItem('plant_ai_gemini_key') || '';
+  }
+
+  const openModalBtn = document.getElementById('open-api-modal-btn');
+  if (openModalBtn && apiKeyModal) {
+    openModalBtn.addEventListener('click', () => apiKeyModal.classList.remove('hidden'));
+  }
+
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => apiKeyModal.classList.add('hidden'));
+  }
+
+  if (saveKeyBtn) {
+    saveKeyBtn.addEventListener('click', () => {
+      const key = geminiKeyInput.value.trim();
+      if (key) {
+        localStorage.setItem('plant_ai_gemini_key', key);
+        showToast('Gemini Vision AI enabled successfully!', 'success');
+      } else {
+        localStorage.removeItem('plant_ai_gemini_key');
+        showToast('Using high-speed built-in AI engine.', 'success');
+      }
+      apiKeyModal.classList.add('hidden');
+    });
+  }
+
+  if (clearKeyBtn) {
+    clearKeyBtn.addEventListener('click', () => {
+      geminiKeyInput.value = '';
+      localStorage.removeItem('plant_ai_gemini_key');
+      showToast('Key cleared. Using built-in AI.', 'success');
+      apiKeyModal.classList.add('hidden');
+    });
+  }
 });
 
 </script>
+
+  <!-- Gemini API Key Modal -->
+  <div id="api-key-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ AI Vision Engine Settings</h3>
+        <button type="button" class="modal-close-btn" id="close-modal-btn">✕</button>
+      </div>
+      <p class="modal-desc">
+        This app includes built-in neural vision for <strong>Rice (Paddy)</strong> and 14 major agricultural crops.
+        Optionally, you can enter your <strong>free Google Gemini API key</strong> below to enable state-of-the-art multi-modal diagnosis for <em>every plant in the world</em>.
+      </p>
+      <input type="password" id="gemini-key-input" class="key-input" placeholder="AIzaSy... (leave blank to use built-in AI)">
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+        <button type="button" id="clear-key-btn" class="btn btn-outline" style="padding:0.6rem 1.2rem;font-size:0.9rem;">Clear</button>
+        <button type="button" id="save-key-btn" class="btn btn-primary" style="padding:0.6rem 1.4rem;font-size:0.9rem;">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
