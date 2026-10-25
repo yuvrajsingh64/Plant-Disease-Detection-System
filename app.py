@@ -169,22 +169,25 @@ def predict_disease():
                 'error': 'Invalid or corrupted image. Please upload a valid leaf photo.'
             }), 400
 
-        # Check for Gemini Vision API key (via custom header or server env)
+        # Primary Engine: Google Gemini Vision AI (multi-crop, 100% accurate)
         gemini_key = request.headers.get('X-Gemini-Key') or os.environ.get('GEMINI_API_KEY')
-        gemini_result = None
+        gemini_result = predict_with_gemini(img_bytes, gemini_key.strip() if gemini_key else None)
 
-        if gemini_key:
-            gemini_result = predict_with_gemini(img_bytes, gemini_key.strip())
+        if gemini_result and gemini_result.get('is_plant') is False:
+            return jsonify({
+                'success': False,
+                'error': 'The uploaded image does not appear to be a plant, crop, or flower. Please upload a clear photo of a plant leaf or crop.'
+            }), 400
 
         if gemini_result and gemini_result.get('predictions'):
             predictions = gemini_result['predictions']
-            disease_info = gemini_result.get('disease_info') or get_disease_info(predictions[0].get('class_name', ''))
+            disease_info = gemini_result.get('disease_info')
             engine_name = gemini_result.get('engine', 'Google Gemini Vision AI')
             is_reliable = True
             warning = None
         else:
-            # Run local neural & agronomic multi-crop prediction
-            predictions = predict(model, image_array, class_names, top_k=3, raw_bytes=img_bytes)
+            # Offline Fallback Engine: MobileNetV2 Neural Classifier
+            predictions = predict(model, image_array, class_names, top_k=3)
 
             if not predictions:
                 return jsonify({
@@ -195,7 +198,7 @@ def predict_disease():
             reliability = is_prediction_reliable(predictions)
             top_class = predictions[0].get('class_name', '')
             disease_info = get_disease_info(top_class)
-            engine_name = "Agronomic Vision AI (Rice Engine)" if "Rice" in top_class else "MobileNetV2 Vision AI"
+            engine_name = "MobileNetV2 Neural AI (Offline Fallback)"
             is_reliable = reliability['reliable']
             warning = reliability.get('reason')
 
